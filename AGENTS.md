@@ -35,7 +35,58 @@ Do not optimize for:
 - impressive but unused abstractions,
 - replacing working code merely because another approach is fashionable.
 
-## 2. Mandatory lifecycle — do not reorder
+## 2. Default execution mode — CONTINUOUS AUTONOMY
+
+The default behavior for a product repository is **continuous autonomous execution**.
+
+Once the user asks the agent to build, continue, complete, develop, finish, or bring the repository through the lifecycle, that single authorization applies to all eligible lifecycle stages and implementation phases until one of the explicit stop conditions below occurs.
+
+The agent MUST NOT stop merely because:
+- one lifecycle stage completed,
+- a document was created,
+- Stage 07 completed,
+- a phase gate passed,
+- the next task belongs to a later implementation phase,
+- a routine architecture/database choice can be derived from approved documents,
+- a test failed but can be fixed safely,
+- a reviewer found fixable P0/P1 issues,
+- a preferred reviewer model is unavailable and a permitted fallback exists.
+
+Instead, the agent should:
+1. finish the current stage/task,
+2. run its gate,
+3. fix failures that are within scope,
+4. update `docs/PROJECT_STATUS.md`,
+5. determine the next eligible stage/task,
+6. continue automatically.
+
+A user should not need to send `continue` between ordinary stages or phases.
+
+### Explicit stop conditions
+
+Stop and ask the user only when continuing would require one of the following:
+- irreversible or destructive data loss not already approved,
+- meaningful external spend or a paid commitment not already approved,
+- changing the product promise, MVP scope, business model, or a major user-facing requirement,
+- credentials, secrets, legal ownership, store accounts, certificates, domains, payment accounts, or other assets only the user can provide,
+- a major new vendor/platform dependency not already implied or approved,
+- a materially consequential legal, privacy, compliance, or payment-policy choice that cannot be derived safely,
+- production deployment, store submission, public release, payment activation, or another externally consequential action when the environment requires explicit authorization,
+- an unresolved contradiction between authoritative product documents where choosing one would materially change the product,
+- a blocker that cannot be solved with repository access and available tools.
+
+When blocked, do not ask broad questions. Ask only for the smallest missing decision or credential required to proceed.
+
+### Review fallback
+
+If `docs/MODEL_ROUTING.md` requests a preferred critical reviewer such as Astra but that model is unavailable:
+- use the strongest permitted available fallback,
+- mark the review `FALLBACK`,
+- record the actual model used,
+- continue if no unresolved P0/P1 remains,
+- do not pretend the preferred model ran.
+
+## 3. Mandatory lifecycle — do not reorder
 
 The project lifecycle is fixed:
 
@@ -57,43 +108,36 @@ The project lifecycle is fixed:
 
 The ordering is invariant. A stage may be marked `N/A` only when it genuinely does not apply. Never skip a stage without recording the reason.
 
-### Planning autonomy
+Stages may be reconciled in one autonomous run. Each stage must pass its gate before dependent work proceeds, but passing a gate is a transition point, not a reason to stop.
 
-Stages 01–07 may be completed sequentially in one planning session if:
-- each stage passes its gate before the next begins,
-- no material unresolved product decision requires the user,
-- no application code is written.
+If later-stage documents or code already exist while an earlier mandatory artifact is missing:
+1. repair/create the earliest incomplete artifact,
+2. preserve valid later work,
+3. reconcile downstream artifacts against the repaired source of truth,
+4. record material changes,
+5. continue from the earliest eligible implementation point.
 
-After Stage 07, stop before implementation unless the user explicitly asked to implement/code/continue development.
+## 4. Phase detection and automatic progression
 
-### Coding autonomy
-
-During implementation:
-- work only inside the currently authorized implementation phase,
-- complete its tasks and quality gate,
-- update project status,
-- do not silently jump multiple implementation phases in one task unless the user explicitly asked for autonomous multi-phase execution.
-
-A simple user message such as `continue` is sufficient authorization to proceed to the next eligible phase. The user should not need to restate the workflow.
-
-## 3. Phase detection
-
-At the start of every task:
+At the start of every task and after every completed gate:
 
 1. Read `AGENTS.md`.
 2. Read `docs/AI_DEVELOPMENT_PLAYBOOK.md`.
 3. Inspect `docs/PROJECT_STATUS.md` if present.
-4. Inspect the repository and relevant approved docs.
-5. Determine the earliest incomplete mandatory lifecycle stage.
-6. Reconcile that with the user's explicit request.
-7. Work only on the allowed stage/task.
-8. Update `docs/PROJECT_STATUS.md` before finishing.
+4. Inspect repository evidence and approved docs.
+5. Determine the earliest incomplete mandatory lifecycle stage or implementation task.
+6. Reconcile that with explicit user instructions.
+7. Perform the eligible work.
+8. Verify its gate.
+9. Fix in-scope failures.
+10. Update `docs/PROJECT_STATUS.md`.
+11. Continue to the next eligible stage/task automatically unless an explicit stop condition applies.
 
 A README containing the marker `AI_PLAYBOOK_TEMPLATE` is a template README and does not count as the project's product README.
 
-If `docs/PROJECT_STATUS.md` conflicts with the actual repository, the repository and approved artifacts win. Correct the status file and explain the reconciliation in its changelog.
+If `docs/PROJECT_STATUS.md` conflicts with the actual repository, repository evidence and approved artifacts win. Correct the status file and record the reconciliation.
 
-## 4. Source-of-truth hierarchy
+## 5. Source-of-truth hierarchy
 
 Use these files for these decisions:
 
@@ -109,7 +153,7 @@ Use these files for these decisions:
 
 Do not introduce behavior that contradicts higher-level approved documents. If code and docs drift, determine which is intended, then synchronize both.
 
-## 5. Research-before-decision rule
+## 6. Research-before-decision rule
 
 Use current primary/official sources when a decision depends on:
 - framework/library versions,
@@ -134,9 +178,9 @@ Prefer:
 
 Never treat model memory as authoritative for version-sensitive facts.
 
-## 6. Product discipline
+## 7. Product discipline
 
-Before code exists, the project must answer:
+Before implementation progresses, the project must answer:
 - Who is the primary user?
 - What painful job/problem is solved?
 - What is the core repeatable action?
@@ -151,7 +195,7 @@ Every feature must map to at least one approved user flow and acceptance criteri
 
 No feature may enter the implementation plan merely because it is "nice to have."
 
-## 7. Engineering rules
+## 8. Engineering rules
 
 ### Always
 - Inspect before modifying.
@@ -167,6 +211,7 @@ No feature may enter the implementation plan merely because it is "nice to have.
 - Keep docs synchronized with material behavior changes.
 - Use migrations for database changes after database design is approved.
 - Add observability for important failures and critical product events.
+- Fix in-scope verification failures before advancing.
 
 ### Never
 - Never claim tests passed if they were not run.
@@ -179,17 +224,9 @@ No feature may enter the implementation plan merely because it is "nice to have.
 - Never add dependencies without a concrete need.
 - Never use destructive database operations without an explicit migration/rollback strategy.
 - Never silently change product scope.
+- Never stop after merely reporting what should be done next when the next action is safe and authorized; perform it.
 
-### Ask/stop only for materially blocking decisions
-Do not ask for routine implementation preferences that can be derived from approved docs. Stop and surface a decision only when proceeding would:
-- create irreversible data loss,
-- incur meaningful cost,
-- change the product promise,
-- require credentials/ownership only the user can provide,
-- introduce a major vendor dependency,
-- materially affect legal/privacy/payment behavior.
-
-## 8. Vertical-slice rule
+## 9. Vertical-slice rule
 
 Before broad feature implementation, deliver one real end-to-end path.
 
@@ -208,7 +245,7 @@ Example shape:
 
 The vertical slice is a proof that the architecture works, not a demo with disconnected screens.
 
-## 9. Quality gates
+## 10. Quality gates
 
 A lifecycle stage is complete only if its gate in `docs/AI_DEVELOPMENT_PLAYBOOK.md` passes.
 
@@ -221,11 +258,11 @@ For coding phases, the minimum evidence is:
 - acceptance criteria verified,
 - status/docs updated.
 
-If a command cannot run, mark the gate `PARTIAL`, explain why, and do not report a full pass.
+If a command cannot run, mark the relevant gate `PARTIAL`, explain why, continue with independent work that is not blocked, and stop only if the blocker prevents safe forward progress.
 
-## 10. Audit protocol
+## 11. Audit protocol
 
-Audits are read-first and evidence-driven.
+Audits are evidence-driven.
 
 Classify findings:
 - `P0`: security/data-loss/app-unusable/release-blocking.
@@ -253,9 +290,9 @@ Audit for:
 - dependency/security issues,
 - store-policy risks.
 
-Fix P0 first, then P1. Do not bury severe findings under polish.
+When P0/P1 findings are fixable with available repository access, fix them and re-run the gate automatically. Do not stop merely to report them. Escalate to the user only when an explicit stop condition applies.
 
-## 11. Mobile defaults
+## 12. Mobile defaults
 
 When the project is a mobile app:
 - treat OWASP MASVS categories as the security baseline,
@@ -269,7 +306,7 @@ When the project is a mobile app:
 
 When Expo/React Native/Supabase is used, load the `expo-supabase-mobile` skill.
 
-## 12. Supabase defaults
+## 13. Supabase defaults
 
 If Supabase is used:
 - design schema/RLS before migrations,
@@ -282,11 +319,13 @@ If Supabase is used:
 - index columns used by foreign keys, filters and policy predicates when appropriate,
 - do not place privileged business logic in the client.
 
-## 13. Model routing
+## 14. Model routing
 
-Read `docs/MODEL_ROUTING.md` before selecting or escalating models. Use Sol for routine planning/work and reserve Astra for the explicit high-consequence gates defined there. Never claim a critical Astra review occurred unless the runtime actually used Astra.
+Read `docs/MODEL_ROUTING.md` before selecting or escalating models. Use cost-effective models for routine work and reserve stronger models for high-consequence gates. Model routing must not introduce unnecessary user approval steps.
 
-## 14. Agents and skills
+Never claim a specific critical reviewer ran unless the runtime actually used that model.
+
+## 15. Agents and skills
 
 If the environment supports native custom agents, use the repository definitions in `.github/agents/` or `.claude/agents/`.
 
@@ -300,7 +339,7 @@ Skills are stored in `.claude/skills/`. GitHub Copilot also supports this projec
 
 Do not load every skill into context preemptively. Use progressive disclosure.
 
-## 15. Implementation-plan rules
+## 16. Implementation-plan rules
 
 `docs/IMPLEMENTATION_PLAN.md` must:
 - use dependency order,
@@ -325,15 +364,25 @@ Default internal implementation phases:
 
 These internal phases adapt to the product; the top-level 01–15 lifecycle does not reorder.
 
-## 16. Completion report
+## 17. Completion and handoff behavior
 
-Every implementation task should finish with a compact report:
-- lifecycle stage / task ID,
+Do not produce an intermediate completion report and then wait for the user if safe authorized work remains.
+
+At each gate, update project state internally and continue.
+
+A user-facing final report is appropriate when:
+- Stage 15/Beta readiness has been reached as far as available local/repository access permits,
+- an explicit stop condition requires user action,
+- the user explicitly requested a narrower scope,
+- the runtime/session is ending and work must be handed off.
+
+The final report should include:
+- lifecycle stage/task reached,
 - what changed,
 - files materially changed,
 - verification performed,
-- gate status: PASS / PARTIAL / FAIL,
-- known issues,
-- next eligible task.
+- gate status,
+- unresolved blockers requiring user action,
+- exact next action only when something external remains.
 
-Do not produce a celebratory "done" when a gate is partial or failing.
+Do not call the project finished when verification is partial or release depends on external user-owned assets.
